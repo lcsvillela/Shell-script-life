@@ -9,7 +9,7 @@ echo -e
 
 IPT=iptables
 CONFIGURACAO=3 # CHAVE - 1 deixa tudo aberto, 2 padroniza tudo como drop e libera as especificadas,
-	       # 3 padroniza drop e fecha as de acesso remoto
+	       # 3 padroniza drop e fecha as de acesso remoto e 4 dropa tudo
 WIFI=wlp1s0
 CABO=enp2s0
 
@@ -52,13 +52,15 @@ $IPT -A OUTPUT -o lo -j ACCEPT
 
 
 function main(){
-	adm_portas
+	adm_web
+	adm_remoto
+	adm_logs
 	restricoes_fluxo
 	configuracao_sistema
 }
 
 
-function adm_portas(){
+function adm_web(){
 
 #liberando portas WEB
 	for i in $(echo ${WEB[@]})
@@ -69,14 +71,16 @@ function adm_portas(){
 	done
 
 
-#Liberando portas de acesso remoto
+function adm_remoto(){
 	for i in $( echo ${REMOTO[@]} )
 	do
 		$IPT -A INPUT -p tcp --dport $i -j ${POLITICA[REMOTO]}
 		$IPT -A INPUT -p udp --dport $i -j ${POLITICA[REMOTO]}
 		echo "Porta REMOTO[$i está ${POLITICA[REMOTO]} TCP/UDP"
 	done
+}
 
+function adm_logs(){
 ##Registrando portas para registro de Logs
 	for i in $( echo ${LOG[@]} )
 	do
