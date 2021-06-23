@@ -1,16 +1,15 @@
 #! /bin/bash
 
-echo
-echo
-echo "======================"
-echo "||   CONFIGURANDO    ||"
-echo "||      IPTABLES     ||"
-echo "======================="
-echo
-echo
+echo -e
+"\n======================
+||   CONFIGURANDO    ||
+||      IPTABLES     ||
+=======================\n"
+
 
 IPT=iptables
-CONFIGURACAO=3
+CONFIGURACAO=3 # CHAVE - 1 deixa tudo aberto, 2 padroniza tudo como drop e libera as especificadas,
+	       # 3 padroniza drop e fecha as de acesso remoto
 WIFI=wlp1s0
 CABO=enp2s0
 
@@ -18,14 +17,14 @@ CABO=enp2s0
 declare WEB=(1 23 123 159 147 852 156)
 declare REMOTO=(154 147 128 146 123 158)
 declare LOG=(1478 125 1456 254 222 111 333 666)
+declare -A POLITICA
 
 case $CONFIGURACAO in
-	1) declare -A POLITICA=( [WEB]=ACCEPT [REMOTO]=ACCEPT [PADRAO]=ACCEPT);;
-	2) declare -A POLITICA=( [WEB]=ACCEPT [REMOTO]=ACCEPT [PADRAO]=DROP);;
-	3) declare -A POLITICA=( [WEB]=ACCEPT [REMOTO]=DROP [PADRAO]=DROP);;
-	4) declare -A POLITICA=( [WEB]=ACCEPT [REMOTO]=DROP [PADRAO]=DROP);;
-	5) declare -A POLITICA=( [WEB]=DROP [REMOTO]=DROP [PADRAO]=DROP);;
-	*) declare -A POLITICA=( [WEB]=ACCEPT [REMOTO]=DROP [PADRAO]=DROP);;
+	1) POLITICA=( [WEB]=ACCEPT [REMOTO]=ACCEPT [PADRAO]=ACCEPT);;
+	2) POLITICA=( [WEB]=ACCEPT [REMOTO]=ACCEPT [PADRAO]=DROP);;
+	3) POLITICA=( [WEB]=ACCEPT [REMOTO]=DROP [PADRAO]=DROP);;
+	4) POLITICA=( [WEB]=DROP [REMOTO]=DROP [PADRAO]=DROP);;
+	*) POLITICA=( [WEB]=ACCEPT [REMOTO]=DROP [PADRAO]=DROP);;
 esac
 
 
@@ -62,27 +61,27 @@ function main(){
 function adm_portas(){
 
 #liberando portas WEB
-	for i in $(seq 1 $( echo $(( ${#WEB[@]} - 1)) ) )
+	for i in $(echo ${WEB[@]})
 	do
-		$IPT -A INPUT -p tcp --dport ${WEB[$i]} -j ${POLITICA[WEB]}
-		$IPT -A INPUT -p udp --dport ${WEB[$i]} -j ${POLITICA[WEB]}
+		$IPT -A INPUT -p tcp --dport $i -j ${POLITICA[WEB]}
+		$IPT -A INPUT -p udp --dport $i -j ${POLITICA[WEB]}
 		echo "Porta ${WEB[$i]} está ${POLITICA[WEB]} TCP/UDP"
 	done
 
 
 #Liberando portas de acesso remoto
-	for i in $(seq 1 $( echo $(( ${#REMOTO[@]} - 1)) ) )
+	for i in $( echo ${REMOTO[@]} )
 	do
-		$IPT -A INPUT -p tcp --dport ${WEB[$i]} -j ${POLITICA[REMOTO]}
-		$IPT -A INPUT -p udp --dport ${WEB[$i]} -j ${POLITICA[REMOTO]}
-		echo "Porta ${REMOTO[$i]} está ${POLITICA[REMOTO]} TCP/UDP"
+		$IPT -A INPUT -p tcp --dport $i -j ${POLITICA[REMOTO]}
+		$IPT -A INPUT -p udp --dport $i -j ${POLITICA[REMOTO]}
+		echo "Porta REMOTO[$i está ${POLITICA[REMOTO]} TCP/UDP"
 	done
 
 ##Registrando portas para registro de Logs
-	for i in $(seq 1 $( echo $(( ${#LOG[@]} - 1)) ) )
+	for i in $( echo ${LOG[@]} )
 	do
-		$IPT -A INPUT -p tcp --dport ${LOG[$i]} -j LOG
-		$IPT -A INPUT -p udp --dport ${LOG[$i]} -j LOG
+		$IPT -A INPUT -p tcp --dport $i -j LOG
+		$IPT -A INPUT -p udp --dport $i -j LOG
 		echo "Porta ${LOG[$i]} será registrada"
 	done
 }
